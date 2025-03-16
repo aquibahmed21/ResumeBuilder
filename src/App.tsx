@@ -1,10 +1,11 @@
+import ResumeForm from './components/ResumeForm';
 import './styles/App.css'
 
 function App() {
 
   return (
     <>
-      <span>Resume Builder</span>
+      <ResumeForm />
     </>
   )
 }
