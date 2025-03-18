@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface EducationEntry {
   date: string;
@@ -84,6 +84,28 @@ const ResumeForm: React.FC = () => {
   const [languages, setLanguages] = useState<LanguageEntry[]>([]);
   const [interests, setInterests] = useState('');
 
+  // On mount, load any saved resume data from localStorage
+  useEffect(() => {
+    const storedData = localStorage.getItem('resumeData');
+    if (storedData) {
+      try {
+        const parsed: ResumeData = JSON.parse(storedData);
+        setContact(parsed.contact);
+        setSummary(parsed.sections.summary);
+        setEducation(parsed.sections.education);
+        setExperience(parsed.sections.experience);
+        setSkills(parsed.sections.skills);
+        setProjects(parsed.sections.projects);
+        setAwards(parsed.sections.awards);
+        setReferences(parsed.sections.references);
+        setLanguages(parsed.sections.languages);
+        setInterests(parsed.sections.interests);
+      } catch (error) {
+        console.error('Failed to parse stored resume data', error);
+      }
+    }
+  }, []);
+
   // Helper functions for dynamic sections
   const addEducation = () => {
     setEducation([...education, { date: '', institution: '', degree: '', highlights: '' }]);
@@ -148,6 +170,80 @@ const ResumeForm: React.FC = () => {
     setLanguages(newLanguages);
   };
 
+  // Generate ATS-friendly LaTeX code using the resume data
+  const generateLaTeXCode = (data: ResumeData): string => {
+    return `
+\\documentclass[11pt]{article}
+\\usepackage[margin=1in]{geometry}
+\\usepackage{enumitem}
+\\begin{document}
+\\begin{center}
+{\\LARGE \\textbf{${data.contact.name}}} \\\\[0.2cm]
+${data.contact.location} \\\\
+${data.contact.email} \\quad ${data.contact.phone} \\\\
+${data.contact.website} \\quad ${data.contact.linkedin} \\quad ${data.contact.github}
+\\end{center}
+\\vspace{0.3cm}
+\\hrule
+\\vspace{0.3cm}
+\\textbf{Summary:}\\\\
+${data.sections.summary}
+\\vspace{0.3cm}
+\\textbf{Education:}\\\\
+\\begin{itemize}[leftmargin=*,label={}]
+${data.sections.education.map(edu => `
+  \\item \\textbf{${edu.institution}} (${edu.date})\\\\
+        ${edu.degree}\\\\
+        Highlights: ${edu.highlights}
+`).join('')}
+\\end{itemize}
+\\vspace{0.3cm}
+\\textbf{Experience:}\\\\
+\\begin{itemize}[leftmargin=*,label={}]
+${data.sections.experience.map(exp => `
+  \\item \\textbf{${exp.position} at ${exp.company}} (${exp.date})\\\\
+        Location: ${exp.location}\\\\
+        Highlights: ${exp.highlights}
+`).join('')}
+\\end{itemize}
+\\vspace{0.3cm}
+\\textbf{Skills:}\\\\
+${data.sections.skills.map(skill => `${skill.name}: ${skill.items}`).join(' \\\\ ')}
+\\vspace{0.3cm}
+\\textbf{Projects:}\\\\
+\\begin{itemize}[leftmargin=*,label={}]
+${data.sections.projects.map(proj => `
+  \\item \\textbf{${proj.name}}\\\\
+        Description: ${proj.description}\\\\
+        Highlights: ${proj.highlights}
+`).join('')}
+\\end{itemize}
+\\vspace{0.3cm}
+\\textbf{Awards, Achievements \\& Certifications:}\\\\
+\\begin{itemize}[leftmargin=*,label={}]
+${data.sections.awards.map(award => `
+  \\item \\textbf{${award.name}} (${award.date})\\\\
+        ${award.organization}\\\\
+        ${award.credentials}\\\\
+        ${award.description}
+`).join('')}
+\\end{itemize}
+\\vspace{0.3cm}
+\\textbf{References:}\\\\
+\\begin{itemize}[leftmargin=*,label={}]
+${data.sections.references.map(ref => `\\item ${ref.name} -- ${ref.contact}`).join('')}
+\\end{itemize}
+\\vspace{0.3cm}
+\\textbf{Languages:}\\\\
+${data.sections.languages.map(lang => `${lang.name} (${lang.proficiency})`).join(' \\\\ ')}
+\\vspace{0.3cm}
+\\textbf{Interests:}\\\\
+${data.sections.interests}
+\\end{document}
+    `;
+  };
+
+
   // Handle form submission: generate JSON and store in localStorage
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,7 +262,15 @@ const ResumeForm: React.FC = () => {
       },
     };
     localStorage.setItem('resumeData', JSON.stringify(resumeData, null, 2));
-    alert('Resume data saved to local storage!');
+    console.log('Resume data saved to local storage!');
+
+    // Generate ATS-friendly LaTeX code
+    const latexCode = generateLaTeXCode(resumeData);
+
+    // Copy LaTeX code to clipboard
+    navigator.clipboard.writeText(latexCode);
+    console.log('LaTeX code copied to clipboard!');
+
   };
 
   return (
@@ -178,72 +282,72 @@ const ResumeForm: React.FC = () => {
         <section className="contact-section">
           <h3>Contact Information</h3>
           <div className="contact-section-group">
-          <div className="form-group w-100p">
-            <label>Name</label>
-            <input
-              type="text"
-              value={contact.name}
-              onChange={(e) => setContact({ ...contact, name: e.target.value })}
-              placeholder='John Doe'
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Location</label>
-            <input
-              type="text"
-              value={contact.location}
-              onChange={(e) => setContact({ ...contact, location: e.target.value })}
-              placeholder='Bangalore, KA'
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Email</label>
-            <input
-              type="email"
-              value={contact.email}
-              onChange={(e) => setContact({ ...contact, email: e.target.value })}
-              placeholder='example@domain.com'
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label>Phone</label>
-            <input
-              type="text"
-              value={contact.phone}
-              onChange={(e) => setContact({ ...contact, phone: e.target.value })}
-              placeholder='123-456-7890'
-            />
-          </div>
-          <div className="form-group">
-            <label>Website</label>
-            <input
-              type="text"
-              value={contact.website}
-              onChange={(e) => setContact({ ...contact, website: e.target.value })}
-              placeholder='yourwebsite.com'
-            />
-          </div>
-          <div className="form-group">
-            <label>LinkedIn</label>
-            <input
-              type="text"
-              value={contact.linkedin}
-              onChange={(e) => setContact({ ...contact, linkedin: e.target.value })}
-              placeholder='linkedin.com/in/johndoe'
-            />
-          </div>
-          <div className="form-group">
-            <label>GitHub</label>
-            <input
-              type="text"
-              value={contact.github}
-              onChange={(e) => setContact({ ...contact, github: e.target.value })}
-              placeholder='github.com/johndoe'
-            />
-          </div>
+            <div className="form-group w-100p">
+              <label>Name</label>
+              <input
+                type="text"
+                value={contact.name}
+                onChange={(e) => setContact({ ...contact, name: e.target.value })}
+                placeholder='John Doe'
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Location</label>
+              <input
+                type="text"
+                value={contact.location}
+                onChange={(e) => setContact({ ...contact, location: e.target.value })}
+                placeholder='Bangalore, KA'
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Email</label>
+              <input
+                type="email"
+                value={contact.email}
+                onChange={(e) => setContact({ ...contact, email: e.target.value })}
+                placeholder='example@domain.com'
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Phone</label>
+              <input
+                type="text"
+                value={contact.phone}
+                onChange={(e) => setContact({ ...contact, phone: e.target.value })}
+                placeholder='123-456-7890'
+              />
+            </div>
+            <div className="form-group">
+              <label>Website</label>
+              <input
+                type="text"
+                value={contact.website}
+                onChange={(e) => setContact({ ...contact, website: e.target.value })}
+                placeholder='yourwebsite.com'
+              />
+            </div>
+            <div className="form-group">
+              <label>LinkedIn</label>
+              <input
+                type="text"
+                value={contact.linkedin}
+                onChange={(e) => setContact({ ...contact, linkedin: e.target.value })}
+                placeholder='linkedin.com/in/johndoe'
+              />
+            </div>
+            <div className="form-group">
+              <label>GitHub</label>
+              <input
+                type="text"
+                value={contact.github}
+                onChange={(e) => setContact({ ...contact, github: e.target.value })}
+                placeholder='github.com/johndoe'
+              />
+            </div>
           </div>
         </section>
 
@@ -563,14 +667,21 @@ const ResumeForm: React.FC = () => {
 
       {/* Inline CSS styling for a responsive, smooth-animated form */}
       <style>{`
+      #root {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
         .form-container {
-          max-width: 90%;
-          margin: 20px auto;
-          background: rgba(255, 255, 255, 0.85);
-          padding: 20px;
-          border-radius: 10px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-          animation: fadeIn 1s ease-out;
+max-width: 90%;
+  background: rgb(255 255 255 / 65%);
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 1s ease-out;
+  max-height: 95dvh;
+  overflow: auto;
         }
         .contact-section-group{
           display: flex;
@@ -665,7 +776,7 @@ const ResumeForm: React.FC = () => {
         }
         @media (max-width: 600px) {
           .form-container {
-            margin: 10px;
+            margin: 10px auto;
             padding: 15px;
           }
         }
