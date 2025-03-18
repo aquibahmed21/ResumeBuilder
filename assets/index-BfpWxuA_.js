@@ -122,14 +122,14 @@ ${f.sections.interests}
         height: 100vh;
       }
         .form-container {
-max-width: 90%;
-  background: rgb(255 255 255 / 65%);
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  animation: fadeIn 1s ease-out;
-  max-height: 95dvh;
-  overflow: auto;
+          max-width: 90%;
+          background: rgb(255 255 255 / 65%);
+          padding: 20px;
+          border-radius: 10px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+          animation: fadeIn 1s ease-out;
+          max-height: 95dvh;
+          overflow: auto;
         }
         .contact-section-group{
           display: flex;
