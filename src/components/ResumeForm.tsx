@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/App.css';
+import '../styles/Resume.css';
 
 // --- Types ---
 interface EducationEntry { date: string; institution: string; degree: string; highlights: string; }
@@ -94,77 +95,6 @@ const ResumeForm: React.FC = () => {
     setter(updated);
   };
 
-  // --- LaTeX Generation ---
-  const generateLaTeXCode = (data: ResumeData): string => `
-\\documentclass[11pt]{article}
-\\usepackage[margin=1in]{geometry}
-\\usepackage{enumitem}
-\\begin{document}
-\\begin{center}
-{\\LARGE \\textbf{${data.contact.name}}} \\\\[0.2cm]
-${data.contact.location} \\\\
-${data.contact.email} \\quad ${data.contact.phone} \\\\
-${data.contact.website} \\quad ${data.contact.linkedin} \\quad ${data.contact.github}
-\\end{center}
-\\vspace{0.3cm}
-\\hrule
-\\vspace{0.3cm}
-\\textbf{Summary:}\\\\
-${data.sections.summary}
-\\vspace{0.3cm}
-\\textbf{Education:}\\\\
-\\begin{itemize}[leftmargin=*,label={}]
-${data.sections.education.map(edu => `
-  \\item \\textbf{${edu.institution}} (${edu.date})\\\\
-        ${edu.degree}\\\\
-        Highlights: ${edu.highlights}
-`).join('')}
-\\end{itemize}
-\\vspace{0.3cm}
-\\textbf{Experience:}\\\\
-\\begin{itemize}[leftmargin=*,label={}]
-${data.sections.experience.map(exp => `
-  \\item \\textbf{${exp.position} at ${exp.company}} (${exp.date})\\\\
-        Location: ${exp.location}\\\\
-        Highlights: ${exp.highlights}
-`).join('')}
-\\end{itemize}
-\\vspace{0.3cm}
-\\textbf{Skills:}\\\\
-${data.sections.skills.map(skill => `${skill.name}: ${skill.items}`).join(' \\\\ ')}
-\\vspace{0.3cm}
-\\textbf{Projects:}\\\\
-\\begin{itemize}[leftmargin=*,label={}]
-${data.sections.projects.map(proj => `
-  \\item \\textbf{${proj.name}}\\\\
-        Description: ${proj.description}\\\\
-        Highlights: ${proj.highlights}
-`).join('')}
-\\end{itemize}
-\\vspace{0.3cm}
-\\textbf{Awards, Achievements \\& Certifications:}\\\\
-\\begin{itemize}[leftmargin=*,label={}]
-${data.sections.awards.map(award => `
-  \\item \\textbf{${award.name}} (${award.date})\\\\
-        ${award.organization}\\\\
-        ${award.credentials}\\\\
-        ${award.description}
-`).join('')}
-\\end{itemize}
-\\vspace{0.3cm}
-\\textbf{References:}\\\\
-\\begin{itemize}[leftmargin=*,label={}]
-${data.sections.references.map(ref => `\\item ${ref.name} -- ${ref.contact}`).join('')}
-\\end{itemize}
-\\vspace{0.3cm}
-\\textbf{Languages:}\\\\
-${data.sections.languages.map(lang => `${lang.name} (${lang.proficiency})`).join(' \\\\ ')}
-\\vspace{0.3cm}
-\\textbf{Interests:}\\\\
-${data.sections.interests}
-\\end{document}
-  `;
-
   // --- Form Submission ---
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -183,10 +113,81 @@ ${data.sections.interests}
       },
     };
     localStorage.setItem('resumeData', JSON.stringify(resumeData, null, 2));
-    navigator.clipboard.writeText(generateLaTeXCode(resumeData));
-
+    navigator.clipboard.writeText(resumeData ? JSON.stringify(resumeData, null, 2) : '');
+    renderResume(resumeData);
   };
 
+  function renderResume(data: any): void {
+    const resume = document.getElementById("resume")!;
+    const layout = (document.querySelector("input[name=layout]:checked") as HTMLInputElement)!.value;
+    let html = "";
+
+    // Header common
+    const header = `
+        <header>
+          <h1>${data.contact.name}</h1>
+          <p>${data.contact.location}</p>
+          <p>Email: ${data.contact.email} | Phone: ${data.contact.phone}</p>
+          <p>Website: ${data.contact.website} | LinkedIn: ${data.contact.linkedin} | GitHub: ${data.contact.github}</p>
+        </header>
+      `;
+
+    // Sections
+    const summary = `<section><h2>Summary</h2><p>${data.sections.summary}</p></section>`;
+
+    const education = `<section><h2>Education</h2>${data.sections.education.map((e: EducationEntry) => `
+        <article><h3>${e.degree}</h3><p>${e.institution} (${e.date})</p><p>${e.highlights}</p></article>
+      `).join("")}</section>`;
+
+    const experience = `<section><h2>Experience</h2>${data.sections.experience.map((  exp: ExperienceEntry) => `
+        <article><h3>${exp.position}</h3><p>${exp.company}, ${exp.location} (${exp.date})</p><p>${exp.highlights}</p></article>
+      `).join("")}</section>`;
+
+    const skills = `<section><h2>Skills</h2><ul>${data.sections.skills.map((  s: SkillEntry) => `
+        <li><strong>${s.name}:</strong> ${s.items}</li>`).join("")}</ul></section>`;
+
+    const projects = `<section><h2>Projects</h2>${data.sections.projects.map((p: ProjectEntry) => `
+        <article><h3>${p.name}</h3><p>${p.description}</p><p>${p.highlights}</p></article>
+      `).join("")}</section>`;
+
+    const awards = `<section><h2>Awards</h2>${data.sections.awards.map((a: AwardEntry) => `
+        <article><h3>${a.name}</h3><p>${a.organization} (${a.date})</p><p>${a.description}</p></article>
+      `).join("")}</section>`;
+
+    const languages = `<section><h2>Languages</h2><ul>${data.sections.languages.map(( l: LanguageEntry) => `<li>${l.name} - ${l.proficiency}</li>`).join("")}</ul></section>`;
+
+    const interests = `<section><h2>Interests</h2><p>${data.sections.interests}</p></section>`;
+
+    // Layouts
+    if (layout === "layout1") {
+      html = `<div class="layout1"><div class="left">${header}${skills}${languages}${interests}</div><div class="right">${summary}${experience}${education}${projects}${awards}</div></div>`;
+    }
+    else if (layout === "timeline") {
+      html = `${header}${summary}<div class="timeline">${experience}${education}</div>${skills}${projects}${awards}${languages}${interests}`;
+    }
+    else if (layout === "minimalist") {
+      html = `<div class="minimalist">${header}${summary}${experience}${education}${skills}${projects}${awards}${languages}${interests}</div>`;
+    }
+    else if (layout === "cards") {
+      html = `<div class="cards">${header}${summary}${experience}${education}${skills}${projects}${awards}${languages}${interests}</div>`;
+    }
+    else if (layout === "compact") {
+      html = `<div class="compact">${header}${summary}${experience}${skills}${projects}${education}${languages}</div>`;
+    }
+
+    if (resume)
+      resume.innerHTML = html;
+  }
+
+  function handleLayoutChange(event: React.FormEvent<HTMLDivElement>): void {
+    const target = event.target as HTMLInputElement;
+    if (target && target.name === "layout") {
+      // You can store the selected layout in state if needed
+      // For now, just log the selected layout value
+      console.log("Selected layout:", target.value);
+      // Example: setLayout(target.value); // if you add a layout state
+    }
+  }
   // --- Render ---
   return (
     <div className="form-container">
@@ -460,19 +461,52 @@ ${data.sections.interests}
           Generate Resume JSON
         </button>
       </form>
+
+      <Section title="Resume Generator Controls">
+        <div className="w-100p">
+          <div className="toolbar">
+            <div className="radio-group" onChange={handleLayoutChange}>
+              <label>
+                <input type="radio" name="layout" value="layout1" checked/>
+                Classic Two-Column
+              </label>
+              <label>
+                <input type="radio" name="layout" value="timeline" />
+                Timeline Style
+              </label>
+              <label>
+                <input type="radio" name="layout" value="minimalist" />
+                Minimalist
+              </label>
+              <label>
+                <input type="radio" name="layout" value="cards" />
+                Card-Based
+              </label>
+              <label>
+                <input type="radio" name="layout" value="compact" />
+                Compact One-Page
+              </label>
+            </div>
+
+          </div>
+          <div id="resume" className="resume"></div>
+          <button className="print-btn" onClick={() => window.print()}>Download PDF</button>
+        </div>
+      </Section>
+
     </div>
   );
 };
 
 // --- Helper Components ---
-const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+const Section: React.FC<{ title: string; children: React.ReactNode; }> = ({ title, children }) => (
   <section>
     <h3>{title}</h3>
     {children}
   </section>
 );
 
-const AddButton: React.FC<{ onClick: () => void; label: string }> = ({ onClick, label }) => (
+const AddButton: React.FC<{ onClick: () => void; label: string; }> = ({ onClick, label }) => (
   <button type="button" onClick={onClick}>{label}</button>
 );
 
