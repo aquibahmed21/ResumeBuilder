@@ -1,42 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import '../styles/App.css';
 
-interface EducationEntry {
-  date: string;
-  institution: string;
-  degree: string;
-  highlights: string;
-}
-interface ExperienceEntry {
-  date: string;
-  position: string;
-  company: string;
-  location: string;
-  highlights: string;
-}
-interface SkillEntry {
-  name: string;
-  items: string;
-}
-interface ProjectEntry {
-  name: string;
-  description: string;
-  highlights: string;
-}
-interface AwardEntry {
-  name: string;
-  date: string;
-  organization: string;
-  credentials: string;
-  description: string;
-}
-interface ReferenceEntry {
-  name: string;
-  contact: string;
-}
-interface LanguageEntry {
-  name: string;
-  proficiency: string;
-}
+// --- Types ---
+interface EducationEntry { date: string; institution: string; degree: string; highlights: string; }
+interface ExperienceEntry { date: string; position: string; company: string; location: string; highlights: string; }
+interface SkillEntry { name: string; items: string; }
+interface ProjectEntry { name: string; description: string; highlights: string; }
+interface AwardEntry { name: string; date: string; organization: string; credentials: string; description: string; }
+interface ReferenceEntry { name: string; contact: string; }
+interface LanguageEntry { name: string; proficiency: string; }
 
 interface ResumeData {
   contact: {
@@ -61,19 +33,12 @@ interface ResumeData {
   };
 }
 
+// --- Main Component ---
 const ResumeForm: React.FC = () => {
-  // Contact Information
+  // --- State ---
   const [contact, setContact] = useState({
-    name: '',
-    location: '',
-    email: '',
-    phone: '',
-    website: '',
-    linkedin: '',
-    github: '',
+    name: '', location: '', email: '', phone: '', website: '', linkedin: '', github: '',
   });
-
-  // Other Sections
   const [summary, setSummary] = useState('');
   const [education, setEducation] = useState<EducationEntry[]>([]);
   const [experience, setExperience] = useState<ExperienceEntry[]>([]);
@@ -84,7 +49,7 @@ const ResumeForm: React.FC = () => {
   const [languages, setLanguages] = useState<LanguageEntry[]>([]);
   const [interests, setInterests] = useState('');
 
-  // On mount, load any saved resume data from localStorage
+  // --- Load from localStorage ---
   useEffect(() => {
     const storedData = localStorage.getItem('resumeData');
     if (storedData) {
@@ -106,73 +71,31 @@ const ResumeForm: React.FC = () => {
     }
   }, []);
 
-  // Helper functions for dynamic sections
-  const addEducation = () => {
-    setEducation([...education, { date: '', institution: '', degree: '', highlights: '' }]);
+  // --- Section Helpers ---
+  const addEntry = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, entry: T) =>
+    setter((prev) => [...prev, entry]);
+  const updateEntry = <T,>(
+    index: number,
+    field: keyof T,
+    value: string,
+    entries: T[],
+    setter: React.Dispatch<React.SetStateAction<T[]>>
+  ) => {
+    const updated = [...entries];
+    updated[index][field] = value as T[keyof T];
+    setter(updated);
   };
-  const updateEducation = (index: number, field: keyof EducationEntry, value: string) => {
-    const newEducation = [...education];
-    newEducation[index][field] = value;
-    setEducation(newEducation);
-  };
-
-  const addExperience = () => {
-    setExperience([...experience, { date: '', position: '', company: '', location: '', highlights: '' }]);
-  };
-  const updateExperience = (index: number, field: keyof ExperienceEntry, value: string) => {
-    const newExperience = [...experience];
-    newExperience[index][field] = value;
-    setExperience(newExperience);
-  };
-
-  const addSkill = () => {
-    setSkills([...skills, { name: '', items: '' }]);
-  };
-  const updateSkill = (index: number, field: keyof SkillEntry, value: string) => {
-    const newSkills = [...skills];
-    newSkills[index][field] = value;
-    setSkills(newSkills);
+  const removeEntry = <T,>(
+    index: number,
+    entries: T[],
+    setter: React.Dispatch<React.SetStateAction<T[]>>
+  ) => {
+    const updated = entries.filter((_, i) => i !== index);
+    setter(updated);
   };
 
-  const addProject = () => {
-    setProjects([...projects, { name: '', description: '', highlights: '' }]);
-  };
-  const updateProject = (index: number, field: keyof ProjectEntry, value: string) => {
-    const newProjects = [...projects];
-    newProjects[index][field] = value;
-    setProjects(newProjects);
-  };
-
-  const addAward = () => {
-    setAwards([...awards, { name: '', date: '', organization: '', credentials: '', description: '' }]);
-  };
-  const updateAward = (index: number, field: keyof AwardEntry, value: string) => {
-    const newAwards = [...awards];
-    newAwards[index][field] = value;
-    setAwards(newAwards);
-  };
-
-  const addReference = () => {
-    setReferences([...references, { name: '', contact: '' }]);
-  };
-  const updateReference = (index: number, field: keyof ReferenceEntry, value: string) => {
-    const newReferences = [...references];
-    newReferences[index][field] = value;
-    setReferences(newReferences);
-  };
-
-  const addLanguage = () => {
-    setLanguages([...languages, { name: '', proficiency: '' }]);
-  };
-  const updateLanguage = (index: number, field: keyof LanguageEntry, value: string) => {
-    const newLanguages = [...languages];
-    newLanguages[index][field] = value;
-    setLanguages(newLanguages);
-  };
-
-  // Generate ATS-friendly LaTeX code using the resume data
-  const generateLaTeXCode = (data: ResumeData): string => {
-    return `
+  // --- LaTeX Generation ---
+  const generateLaTeXCode = (data: ResumeData): string => `
 \\documentclass[11pt]{article}
 \\usepackage[margin=1in]{geometry}
 \\usepackage{enumitem}
@@ -240,12 +163,10 @@ ${data.sections.languages.map(lang => `${lang.name} (${lang.proficiency})`).join
 \\textbf{Interests:}\\\\
 ${data.sections.interests}
 \\end{document}
-    `;
-  };
+  `;
 
-
-  // Handle form submission: generate JSON and store in localStorage
-  const handleSubmit = (e: React.FormEvent) => {
+  // --- Form Submission ---
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const resumeData: ResumeData = {
       contact,
@@ -262,256 +183,151 @@ ${data.sections.interests}
       },
     };
     localStorage.setItem('resumeData', JSON.stringify(resumeData, null, 2));
-    console.log('Resume data saved to local storage!');
-
-    // Generate ATS-friendly LaTeX code
-    const latexCode = generateLaTeXCode(resumeData);
-
-    // Copy LaTeX code to clipboard
-    navigator.clipboard.writeText(latexCode);
-    console.log('LaTeX code copied to clipboard!');
+    navigator.clipboard.writeText(generateLaTeXCode(resumeData));
 
   };
 
+  // --- Render ---
   return (
     <div className="form-container">
       <form onSubmit={handleSubmit}>
         <h2>Resume Builder</h2>
 
         {/* Contact Information */}
-        <section className="contact-section">
-          <h3>Contact Information</h3>
+        <Section title="Contact Information">
           <div className="contact-section-group">
-            <div className="form-group w-100p">
-              <label>Name</label>
-              <input
-                type="text"
-                value={contact.name}
-                onChange={(e) => setContact({ ...contact, name: e.target.value })}
-                placeholder='John Doe'
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Location</label>
-              <input
-                type="text"
-                value={contact.location}
-                onChange={(e) => setContact({ ...contact, location: e.target.value })}
-                placeholder='Bangalore, KA'
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Email</label>
-              <input
-                type="email"
-                value={contact.email}
-                onChange={(e) => setContact({ ...contact, email: e.target.value })}
-                placeholder='example@domain.com'
-                required
-              />
-            </div>
-            <div className="form-group">
-              <label>Phone</label>
-              <input
-                type="text"
-                value={contact.phone}
-                onChange={(e) => setContact({ ...contact, phone: e.target.value })}
-                placeholder='123-456-7890'
-              />
-            </div>
-            <div className="form-group">
-              <label>Website</label>
-              <input
-                type="text"
-                value={contact.website}
-                onChange={(e) => setContact({ ...contact, website: e.target.value })}
-                placeholder='yourwebsite.com'
-              />
-            </div>
-            <div className="form-group">
-              <label>LinkedIn</label>
-              <input
-                type="text"
-                value={contact.linkedin}
-                onChange={(e) => setContact({ ...contact, linkedin: e.target.value })}
-                placeholder='linkedin.com/in/johndoe'
-              />
-            </div>
-            <div className="form-group">
-              <label>GitHub</label>
-              <input
-                type="text"
-                value={contact.github}
-                onChange={(e) => setContact({ ...contact, github: e.target.value })}
-                placeholder='github.com/johndoe'
-              />
-            </div>
+            {[
+              { label: 'Name', value: contact.name, key: 'name', type: 'text', required: true, placeholder: 'John Doe' },
+              { label: 'Location', value: contact.location, key: 'location', type: 'text', required: true, placeholder: 'Bangalore, KA' },
+              { label: 'Email', value: contact.email, key: 'email', type: 'email', required: true, placeholder: 'example@domain.com' },
+              { label: 'Phone', value: contact.phone, key: 'phone', type: 'text', required: false, placeholder: '123-456-7890' },
+              { label: 'Website', value: contact.website, key: 'website', type: 'text', required: false, placeholder: 'yourwebsite.com' },
+              { label: 'LinkedIn', value: contact.linkedin, key: 'linkedin', type: 'text', required: false, placeholder: 'linkedin.com/in/johndoe' },
+              { label: 'GitHub', value: contact.github, key: 'github', type: 'text', required: false, placeholder: 'github.com/johndoe' },
+            ].map(({ label, value, key, type, required, placeholder }) => (
+              <div className={`form-group${key === 'name' ? ' w-100p' : ''}`} key={key}>
+                <label>{label}</label>
+                <input
+                  type={type}
+                  value={value}
+                  onChange={e => setContact({ ...contact, [key]: e.target.value })}
+                  placeholder={placeholder}
+                  required={required}
+                />
+              </div>
+            ))}
           </div>
-        </section>
+        </Section>
 
         {/* Summary */}
-        <section className="summary-section">
-          <h3>Summary</h3>
+        <Section title="Summary">
           <div className="form-group">
             <textarea
               value={summary}
-              onChange={(e) => setSummary(e.target.value)}
+              onChange={e => setSummary(e.target.value)}
               placeholder="Enter a brief summary"
               rows={3}
               required
-            ></textarea>
+            />
           </div>
-        </section>
+        </Section>
 
         {/* Education */}
-        <section className="education-section">
-          <h3>Education</h3>
-          {education.map((edu, index) => (
-            <div key={index} className="dynamic-section contact-section-group">
-              <div className="form-group">
-                <label>Degree</label>
-                <input
-                  type="text"
-                  value={edu.degree}
-                  onChange={(e) => updateEducation(index, 'degree', e.target.value)}
-                  required
-                  placeholder='BS in Computer Science'
-                />
-              </div>
-              <div className="form-group">
-                <label>Institution</label>
-                <input
-                  type="text"
-                  value={edu.institution}
-                  onChange={(e) => updateEducation(index, 'institution', e.target.value)}
-                  required
-                  placeholder='University of Pennsylvania'
-                />
-              </div>
-              <div className="form-group">
-                <label>Date</label>
-                <input
-                  type="text"
-                  value={edu.date}
-                  onChange={(e) => updateEducation(index, 'date', e.target.value)}
-                  required
-                  placeholder='Sept 2000 – May 2005'
-                />
-              </div>
-              <div className="form-group w-100p">
-                <label>Highlights (comma separated)</label>
-                <input
-                  type="text"
-                  value={edu.highlights}
-                  onChange={(e) => updateEducation(index, 'highlights', e.target.value)}
-                  placeholder='GPA: 3.9/4.0, Coursework: Computer Architecture, Comparison of Learning Algorithms, Computational Theory'
-                />
-              </div>
+        <Section title="Education">
+          {education.map((edu, idx) => (
+            <div key={idx} className="dynamic-section contact-section-group">
+              {[
+                { label: 'Degree', field: 'degree', value: edu.degree, required: true, placeholder: 'BS in Computer Science' },
+                { label: 'Institution', field: 'institution', value: edu.institution, required: true, placeholder: 'University of Pennsylvania' },
+                { label: 'Date', field: 'date', value: edu.date, required: true, placeholder: 'Sept 2000 – May 2005' },
+                { label: 'Highlights (comma separated)', field: 'highlights', value: edu.highlights, required: false, placeholder: 'GPA: 3.9/4.0, Coursework: ...', className: 'w-100p' },
+              ].map(({ label, field, value, required, placeholder, className }) => (
+                <div className={`form-group${className ? ` ${className}` : ''}`} key={field}>
+                  <label>{label}</label>
+                  <input
+                    type="text"
+                    value={value}
+                    onChange={e => updateEntry(idx, field as keyof EducationEntry, e.target.value, education, setEducation)}
+                    required={required}
+                    placeholder={placeholder}
+                  />
+                </div>
+              ))}
+              <button
+                type="button"
+                className="remove-button"
+                onClick={() => removeEntry(idx, education, setEducation)}
+              >
+                Remove
+              </button>
             </div>
           ))}
-          <button type="button" onClick={addEducation}>Add Education</button>
-        </section>
+          <AddButton onClick={() => addEntry(setEducation, { date: '', institution: '', degree: '', highlights: '' })} label="Add" />
+        </Section>
 
         {/* Experience */}
-        <section className="experience-section">
-          <h3>Experience</h3>
-          {experience.map((exp, index) => (
-            <div key={index} className="dynamic-section contact-section-group">
-              <div className="form-group">
-                <label>Position</label>
-                <input
-                  type="text"
-                  value={exp.position}
-                  onChange={(e) => updateExperience(index, 'position', e.target.value)}
-                  required
-                  placeholder='Software Engineer'
-                />
-              </div>
-              <div className="form-group">
-                <label>Company</label>
-                <input
-                  type="text"
-                  value={exp.company}
-                  onChange={(e) => updateExperience(index, 'company', e.target.value)}
-                  required
-                  placeholder='Google'
-                />
-              </div>
-              <div className="form-group">
-                <label>Location</label>
-                <input
-                  type="text"
-                  value={exp.location}
-                  onChange={(e) => updateExperience(index, 'location', e.target.value)}
-                  placeholder='Mountain View, CA'
-                />
-              </div>
-              <div className="form-group">
-                <label>Date</label>
-                <input
-                  type="text"
-                  value={exp.date}
-                  onChange={(e) => updateExperience(index, 'date', e.target.value)}
-                  required
-                  placeholder='Sept 2000 – May 2005'
-                />
-              </div>
-              <div className="form-group w-100p">
-                <label>Highlights (comma separated)</label>
-                <input
-                  type="text"
-                  value={exp.highlights}
-                  onChange={(e) => updateExperience(index, 'highlights', e.target.value)}
-                  placeholder='Worked on project X, Contributed to team Y, Developed feature Z'
-                />
-              </div>
+        <Section title="Experience">
+          {experience.map((exp, idx) => (
+            <div key={idx} className="dynamic-section contact-section-group">
+              {[
+                { label: 'Position', field: 'position', value: exp.position, required: true, placeholder: 'Software Engineer' },
+                { label: 'Company', field: 'company', value: exp.company, required: true, placeholder: 'Google' },
+                { label: 'Location', field: 'location', value: exp.location, required: false, placeholder: 'Mountain View, CA' },
+                { label: 'Date', field: 'date', value: exp.date, required: true, placeholder: 'Sept 2000 – May 2005' },
+                { label: 'Highlights (comma separated)', field: 'highlights', value: exp.highlights, required: false, placeholder: 'Worked on project X, ...', className: 'w-100p' },
+              ].map(({ label, field, value, required, placeholder, className }) => (
+                <div className={`form-group${className ? ` ${className}` : ''}`} key={field}>
+                  <label>{label}</label>
+                  <input
+                    type="text"
+                    value={value}
+                    onChange={e => updateEntry(idx, field as keyof ExperienceEntry, e.target.value, experience, setExperience)}
+                    required={required}
+                    placeholder={placeholder}
+                  />
+                </div>
+              ))}
+              <button type="button" onClick={() => removeEntry(idx, experience, setExperience)} className="remove-button">Remove</button>
             </div>
           ))}
-          <button type="button" onClick={addExperience}>Add Experience</button>
-        </section>
+          <AddButton onClick={() => addEntry(setExperience, { date: '', position: '', company: '', location: '', highlights: '' })} label="Add" />
+        </Section>
 
         {/* Skills */}
-        <section className="skills-section">
-          <h3>Skills</h3>
-          {skills.map((skill, index) => (
-            <div key={index} className="dynamic-section contact-section-group">
-              <div className="form-group">
-                <label>Category Name</label>
-                <input
-                  type="text"
-                  value={skill.name}
-                  onChange={(e) => updateSkill(index, 'name', e.target.value)}
-                  placeholder='Languages'
-                />
-              </div>
-              <div className="form-group">
-                <label>Items (comma separated)</label>
-                <input
-                  type="text"
-                  value={skill.items}
-                  onChange={(e) => updateSkill(index, 'items', e.target.value)}
-                  placeholder='Java, Python, C++'
-                />
-              </div>
+        <Section title="Skills">
+          {skills.map((skill, idx) => (
+            <div key={idx} className="dynamic-section contact-section-group">
+              {[
+                { label: 'Category Name', field: 'name', value: skill.name, placeholder: 'Languages' },
+                { label: 'Items (comma separated)', field: 'items', value: skill.items, placeholder: 'Java, Python, C++' },
+              ].map(({ label, field, value, placeholder }) => (
+                <div className="form-group" key={field}>
+                  <label>{label}</label>
+                  <input
+                    type="text"
+                    value={value}
+                    onChange={e => updateEntry(idx, field as keyof SkillEntry, e.target.value, skills, setSkills)}
+                    placeholder={placeholder}
+                  />
+                </div>
+              ))}
+              <button type="button" onClick={() => removeEntry(idx, skills, setSkills)} className="remove-button">Remove</button>
             </div>
           ))}
-          <button type="button" onClick={addSkill}>Add Skill</button>
-        </section>
+          <AddButton onClick={() => addEntry(setSkills, { name: '', items: '' })} label="Add" />
+        </Section>
 
         {/* Projects */}
-        <section className="projects-section">
-          <h3>Projects</h3>
-          {projects.map((proj, index) => (
-            <div key={index} className="dynamic-section contact-section-group">
+        <Section title="Projects">
+          {projects.map((proj, idx) => (
+            <div key={idx} className="dynamic-section contact-section-group">
               <div className="form-group">
                 <label>Project Name</label>
                 <input
                   type="text"
                   value={proj.name}
-                  onChange={(e) => updateProject(index, 'name', e.target.value)}
-                  placeholder='Project X'
+                  onChange={e => updateEntry(idx, 'name', e.target.value, projects, setProjects)}
+                  placeholder="Project X"
                 />
               </div>
               <div className="form-group">
@@ -519,89 +335,69 @@ ${data.sections.interests}
                 <input
                   type="text"
                   value={proj.highlights}
-                  onChange={(e) => updateProject(index, 'highlights', e.target.value)}
-                  placeholder='Worked on project X, Contributed to team Y, Developed feature Z'
+                  onChange={e => updateEntry(idx, 'highlights', e.target.value, projects, setProjects)}
+                  placeholder="Worked on project X, ..."
                 />
               </div>
               <div className="form-group w-100p">
                 <label>Description</label>
                 <textarea
                   value={proj.description}
-                  onChange={(e) => updateProject(index, 'description', e.target.value)}
-                  placeholder='Description of project X'
-                ></textarea>
+                  onChange={e => updateEntry(idx, 'description', e.target.value, projects, setProjects)}
+                  placeholder="Description of project X"
+                />
               </div>
+              <button type="button" onClick={() => removeEntry(idx, projects, setProjects)} className="remove-button">Remove</button>
             </div>
           ))}
-          <button type="button" onClick={addProject}>Add Project</button>
-        </section>
+          <AddButton onClick={() => addEntry(setProjects, { name: '', description: '', highlights: '' })} label="Add" />
+        </Section>
 
-        {/* Awards, Achievements & Certifications */}
-        <section className="awards-section">
-          <h3>Awards, Achievements & Certifications</h3>
-          {awards.map((award, index) => (
-            <div key={index} className="dynamic-section contact-section-group">
-              <div className="form-group">
-                <label>Award / Achievements / Certificate Name</label>
-                <input
-                  type="text"
-                  value={award.name}
-                  onChange={(e) => updateAward(index, 'name', e.target.value)}
-                  placeholder='Award X'
-                />
-              </div>
-              <div className="form-group">
-                <label>Organization</label>
-                <input
-                  type="text"
-                  value={award.organization}
-                  onChange={(e) => updateAward(index, 'organization', e.target.value)}
-                  placeholder='Organization X'
-                />
-              </div>
-              <div className="form-group">
-                <label>Credentials</label>
-                <input
-                  type="text"
-                  value={award.credentials}
-                  onChange={(e) => updateAward(index, 'credentials', e.target.value)}
-                  placeholder='Credentials URL'
-                />
-              </div>
-              <div className="form-group">
-                <label>Date</label>
-                <input
-                  type="text"
-                  value={award.date}
-                  onChange={(e) => updateAward(index, 'date', e.target.value)}
-                  placeholder='YYYY-MM-DD'
-                />
-              </div>
+        {/* Awards */}
+        <Section title="Awards, Achievements & Certifications">
+          {awards.map((award, idx) => (
+            <div key={idx} className="dynamic-section contact-section-group">
+              {[
+                { label: 'Award / Achievements / Certificate Name', field: 'name', value: award.name, placeholder: 'Award X' },
+                { label: 'Organization', field: 'organization', value: award.organization, placeholder: 'Organization X' },
+                { label: 'Credentials', field: 'credentials', value: award.credentials, placeholder: 'Credentials URL' },
+                { label: 'Date', field: 'date', value: award.date, placeholder: 'YYYY-MM-DD' },
+              ].map(({ label, field, value, placeholder }) => (
+                <div className="form-group" key={field}>
+                  <label>{label}</label>
+                  <input
+                    type="text"
+                    value={value}
+                    onChange={e => updateEntry(idx, field as keyof AwardEntry, e.target.value, awards, setAwards)}
+                    placeholder={placeholder}
+                  />
+                </div>
+              ))}
               <div className="form-group w-100p">
                 <label>Description</label>
                 <textarea
                   value={award.description}
-                  onChange={(e) => updateAward(index, 'description', e.target.value)}
-                  placeholder='Description of Award X'
-                ></textarea>
+                  onChange={e => updateEntry(idx, 'description', e.target.value, awards, setAwards)}
+                  placeholder="Description of Award X"
+                />
               </div>
+              <button type="button" onClick={() => removeEntry(idx, awards, setAwards)} className="remove-button">Remove</button>
             </div>
           ))}
-          <button type="button" onClick={addAward}>Add Award</button>
-        </section>
+          <AddButton onClick={() => addEntry(setAwards, { name: '', date: '', organization: '', credentials: '', description: '' })} label="Add" />
+        </Section>
 
         {/* References */}
-        <section className="references-section">
-          <h3>References</h3>
-          {references.map((ref, index) => (
-            <div key={index} className="dynamic-section contact-section-group">
+        <Section title="References">
+          {references.map((ref, idx) => (
+            <div key={idx} className="dynamic-section contact-section-group">
               <div className="form-group">
                 <label>Reference Name</label>
                 <input
                   type="text"
                   value={ref.name}
-                  onChange={(e) => updateReference(index, 'name', e.target.value)}
-                  placeholder='Reference X'
+                  onChange={e => updateEntry(idx, 'name', e.target.value, references, setReferences)}
+                  placeholder="Reference X"
                 />
               </div>
               <div className="form-group">
@@ -609,27 +405,27 @@ ${data.sections.interests}
                 <input
                   type="text"
                   value={ref.contact}
-                  onChange={(e) => updateReference(index, 'contact', e.target.value)}
-                  placeholder='Contact details of Reference X'
+                  onChange={e => updateEntry(idx, 'contact', e.target.value, references, setReferences)}
+                  placeholder="Contact details of Reference X"
                 />
               </div>
+              <button type="button" onClick={() => removeEntry(idx, references, setReferences)} className="remove-button">Remove</button>
             </div>
           ))}
-          <button type="button" onClick={addReference}>Add Reference</button>
-        </section>
+          <AddButton onClick={() => addEntry(setReferences, { name: '', contact: '' })} label="Add" />
+        </Section>
 
         {/* Languages */}
-        <section className="languages-section">
-          <h3>Languages</h3>
-          {languages.map((lang, index) => (
-            <div key={index} className="dynamic-section contact-section-group">
+        <Section title="Languages">
+          {languages.map((lang, idx) => (
+            <div key={idx} className="dynamic-section contact-section-group">
               <div className="form-group">
                 <label>Language Name</label>
                 <input
                   type="text"
                   value={lang.name}
-                  onChange={(e) => updateLanguage(index, 'name', e.target.value)}
-                  placeholder='Language X'
+                  onChange={e => updateEntry(idx, 'name', e.target.value, languages, setLanguages)}
+                  placeholder="Language X"
                 />
               </div>
               <div className="form-group">
@@ -637,152 +433,47 @@ ${data.sections.interests}
                 <input
                   type="text"
                   value={lang.proficiency}
-                  onChange={(e) => updateLanguage(index, 'proficiency', e.target.value)}
-                  placeholder='e.g., Beginner, Intermediate, Fluent'
+                  onChange={e => updateEntry(idx, 'proficiency', e.target.value, languages, setLanguages)}
+                  placeholder="e.g., Beginner, Intermediate, Fluent"
                 />
               </div>
+              <button type="button" onClick={() => removeEntry(idx, languages, setLanguages)} className="remove-button">Remove</button>
             </div>
           ))}
-          <button type="button" onClick={addLanguage}>Add Language</button>
-        </section>
+          <AddButton onClick={() => addEntry(setLanguages, { name: '', proficiency: '' })} label="Add" />
+        </Section>
 
         {/* Interests */}
-        <section className="interests-section">
-          <h3>Interests</h3>
+        <Section title="Interests">
           <div className="form-group">
             <label>Interests (comma separated)</label>
             <input
               type="text"
               value={interests}
-              onChange={(e) => setInterests(e.target.value)}
-              placeholder='e.g., Hiking, Reading, Photography, etc.'
+              onChange={e => setInterests(e.target.value)}
+              placeholder="e.g., Hiking, Reading, Photography, etc."
             />
           </div>
-        </section>
+        </Section>
 
         <button type="submit" className="submit-button">
           Generate Resume JSON
         </button>
       </form>
-
-      {/* Inline CSS styling for a responsive, smooth-animated form */}
-      <style>{`
-      #root {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-      }
-        .form-container {
-          max-width: 90%;
-          background: rgb(255 255 255 / 65%);
-          padding: 20px;
-          border-radius: 10px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-          animation: fadeIn 1s ease-out;
-          max-height: 95dvh;
-          overflow: auto;
-        }
-        .contact-section-group{
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: space-between;
-        }
-        .w-100p{
-          width: 100%;
-        }
-        section {
-          padding-bottom: 20px;
-          margin-bottom: 10px;
-          border-bottom: 1px solid #ccc;
-          display: flex;
-          flex-direction: column;
-        }
-        h2,
-        h3 {
-          text-align: center;
-          margin-bottom: 15px;
-          color: #333;
-        }
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          margin-bottom: 15px;
-          transition: transform 0.3s ease;
-        }
-        .form-group label {
-          margin-bottom: 5px;
-          color: #666;
-        }
-        .form-group input,
-        .form-group textarea {
-          padding: 10px;
-          border: 1px solid #ccc;
-          border-radius: 5px;
-          font-size: 1rem;
-          transition: border-color 0.3s ease, box-shadow 0.3s ease;
-          resize: none;
-        }
-        .form-group input:focus,
-        .form-group textarea:focus {
-          border-color: #1c92d2;
-          box-shadow: 0 0 5px rgba(28, 146, 210, 0.5);
-          outline: none;
-        }
-        button {
-          padding: 10px 15px;
-          border: none;
-          border-radius: 5px;
-          background: #1c92d2;
-          color: white;
-          cursor: pointer;
-          font-size: 1rem;
-          transition: background 0.3s ease, transform 0.2s ease;
-          margin: 5px 0;
-          width: max-content;
-          margin-left: auto;
-        }
-        button:hover {
-          background: #0d6fbd;
-          transform: scale(1.02);
-        }
-        .dynamic-section {
-          // margin-bottom: 20px;
-          // border: 1px solid #eee;
-          // padding: 10px;
-          // border-radius: 5px;
-          // background: rgba(255, 255, 255, 0.9);
-        }
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @media (max-width: 420px) {
-          .form-group {
-            width: 100%;
-          }
-          button {
-            width: 100%;
-          }
-          .form-container {
-            max-width: calc(100% - 10px);
-          }
-        }
-        @media (max-width: 600px) {
-          .form-container {
-            margin: 10px auto;
-            padding: 15px;
-          }
-        }
-      `}</style>
     </div>
   );
 };
+
+// --- Helper Components ---
+const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <section>
+    <h3>{title}</h3>
+    {children}
+  </section>
+);
+
+const AddButton: React.FC<{ onClick: () => void; label: string }> = ({ onClick, label }) => (
+  <button type="button" onClick={onClick}>{label}</button>
+);
 
 export default ResumeForm;
