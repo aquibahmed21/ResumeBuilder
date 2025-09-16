@@ -50,9 +50,70 @@ const ResumeForm: React.FC = () => {
   const [languages, setLanguages] = useState<LanguageEntry[]>([]);
   const [interests, setInterests] = useState('');
 
+  const [resumeData, setResumeData] = useState<ResumeData>({
+    contact,
+    sections: {
+      summary,
+      education,
+      experience,
+      skills,
+      projects,
+      awards,
+      references,
+      languages,
+      interests,
+    },
+  });
+
   // --- Load from localStorage ---
   useEffect(() => {
-    const storedData = localStorage.getItem('resumeData');
+    // const storedData = localStorage.getItem('resumeData');
+    const storedData = JSON.stringify({
+      "contact": {
+        "name": "Rahul Sharma",
+        "location": "Bangalore, Karnataka, India",
+        "email": "rahul.sharma21@gmail.com",
+        "phone": "+91 98765 43210",
+        "website": "www.rahulsharma.dev",
+        "linkedin": "linkedin.com/in/rahulsharma",
+        "github": "github.com/rahulsharma21"
+      },
+      "sections": {
+        "summary": "Senior Software Engineer with 10+ years of experience designing and building scalable web applications. Skilled in both frontend and backend development, passionate about clean code, cloud computing, and mentoring junior engineers.",
+        "education": [
+          { "date": "Sept 2000 - May 2003", "institution": "Bangalore University", "degree": "B.C.A.", "highlights": "Bachelor of Computer Applications with distinction" },
+          { "date": "July 2003 - May 2005", "institution": "Christ University, Bangalore", "degree": "M.C.A.", "highlights": "Master of Computer Applications with focus on Distributed Systems" }
+        ],
+        "experience": [
+          { "date": "Sept 2015 - Present", "position": "Senior Software Engineer", "company": "Facebook (Meta)", "location": "Menlo Park, CA", "highlights": "Led development of scalable React-based web applications; collaborated with cross-functional teams; mentored junior developers; optimized system performance by 30%." },
+          { "date": "Jun 2010 - Aug 2015", "position": "Software Engineer", "company": "Infosys", "location": "Bangalore, India", "highlights": "Developed enterprise-level applications in Java and Node.js; implemented RESTful APIs; enhanced database performance using SQL optimization techniques." }
+        ],
+        "skills": [
+          { "name": "Frontend", "items": "HTML5, CSS3, JavaScript, React.js, Angular" },
+          { "name": "Backend", "items": "Node.js, Express.js, Python, Java, REST APIs" },
+          { "name": "Databases", "items": "MySQL, MongoDB, PostgreSQL" },
+          { "name": "Cloud & DevOps", "items": "AWS, Docker, Kubernetes, Git, CI/CD" }
+        ],
+        "projects": [
+          { "name": "Smart Expense Tracker", "description": "A full-stack web app for managing personal finances with real-time analytics and cloud sync.", "highlights": "Implemented authentication, data visualization using D3.js, and deployed on AWS." },
+          { "name": "E-commerce Platform", "description": "Scalable e-commerce site supporting 100k+ concurrent users.", "highlights": "Built with Node.js and React; integrated payment gateways and inventory management." }
+        ],
+        "awards": [
+          { "name": "Employee of the Year", "date": "2019", "organization": "Facebook", "description": "Recognized for outstanding leadership and contributions to the Ads Engineering team.", "credentials": "Certificate of Appreciation" },
+          { "name": "Best Innovation Award", "date": "2013", "organization": "Infosys", "description": "Awarded for creating an internal automation tool reducing manual QA efforts by 40%.", "credentials": "Certificate of Appreciation" }
+        ],
+        "references": [
+          { "name": "John Doe", "contact": "john.doe@email.com" },
+          { "name": "Jane Smith", "contact": "jane.smith@email.com" }
+        ],
+        "languages": [
+          { "name": "English", "proficiency": "Native" },
+          { "name": "Hindi", "proficiency": "Fluent" },
+          { "name": "Kannada", "proficiency": "Intermediate" }
+        ],
+        "interests": "Hiking, Reading Tech Blogs, Open-source Contribution"
+      }
+    });
     if (storedData) {
       try {
         const parsed: ResumeData = JSON.parse(storedData);
@@ -66,6 +127,8 @@ const ResumeForm: React.FC = () => {
         setReferences(parsed.sections.references);
         setLanguages(parsed.sections.languages);
         setInterests(parsed.sections.interests);
+        setResumeData(parsed);
+        renderResume(parsed);
       } catch (error) {
         console.error('Failed to parse stored resume data', error);
       }
@@ -112,14 +175,19 @@ const ResumeForm: React.FC = () => {
         interests,
       },
     };
-    localStorage.setItem('resumeData', JSON.stringify(resumeData, null, 2));
-    navigator.clipboard.writeText(resumeData ? JSON.stringify(resumeData, null, 2) : '');
-    renderResume(resumeData);
+    if (resumeData) {
+      localStorage.setItem('resumeData', JSON.stringify(resumeData, null, 2));
+      navigator.clipboard.writeText(resumeData ? JSON.stringify(resumeData, null, 2) : '');
+      renderResume(resumeData);
+    }
   };
 
   function renderResume(data: any): void {
     const resume = document.getElementById("resume")!;
-    const layout = (document.querySelector("input[name=layout]:checked") as HTMLInputElement)!.value;
+    const checkbox = (document.querySelector("input[name=layout]:checked") as HTMLInputElement)! || (document.querySelector("input[name=layout]:first-child") as HTMLInputElement)!;
+    if (!checkbox.checked)
+      checkbox.checked = true;
+    const layout = checkbox.value;
     let html = "";
 
     // Header common
@@ -127,8 +195,15 @@ const ResumeForm: React.FC = () => {
         <header>
           <h1>${data.contact.name}</h1>
           <p>${data.contact.location}</p>
-          <p>Email: ${data.contact.email} | Phone: ${data.contact.phone}</p>
-          <p>Website: ${data.contact.website} | LinkedIn: ${data.contact.linkedin} | GitHub: ${data.contact.github}</p>
+          <p>
+            Email: <a href="mailto:${data.contact.email}">${data.contact.email}</a> |
+            Phone: <a href="tel:${data.contact.phone}">${data.contact.phone}</a>
+          </p>
+          <p>
+            Website: <a href="${data.contact.website}" target="_blank">${data.contact.website}</a> |
+            LinkedIn: <a href="${data.contact.linkedin}" target="_blank">${data.contact.linkedin}</a> |
+            GitHub: <a href="${data.contact.github}" target="_blank">${data.contact.github}</a>
+          </p>
         </header>
       `;
 
@@ -139,11 +214,11 @@ const ResumeForm: React.FC = () => {
         <article><h3>${e.degree}</h3><p>${e.institution} (${e.date})</p><p>${e.highlights}</p></article>
       `).join("")}</section>`;
 
-    const experience = `<section><h2>Experience</h2>${data.sections.experience.map((  exp: ExperienceEntry) => `
+    const experience = `<section><h2>Experience</h2>${data.sections.experience.map((exp: ExperienceEntry) => `
         <article><h3>${exp.position}</h3><p>${exp.company}, ${exp.location} (${exp.date})</p><p>${exp.highlights}</p></article>
       `).join("")}</section>`;
 
-    const skills = `<section><h2>Skills</h2><ul>${data.sections.skills.map((  s: SkillEntry) => `
+    const skills = `<section><h2>Skills</h2><ul>${data.sections.skills.map((s: SkillEntry) => `
         <li><strong>${s.name}:</strong> ${s.items}</li>`).join("")}</ul></section>`;
 
     const projects = `<section><h2>Projects</h2>${data.sections.projects.map((p: ProjectEntry) => `
@@ -154,7 +229,7 @@ const ResumeForm: React.FC = () => {
         <article><h3>${a.name}</h3><p>${a.organization} (${a.date})</p><p>${a.description}</p></article>
       `).join("")}</section>`;
 
-    const languages = `<section><h2>Languages</h2><ul>${data.sections.languages.map(( l: LanguageEntry) => `<li>${l.name} - ${l.proficiency}</li>`).join("")}</ul></section>`;
+    const languages = `<section><h2>Languages</h2><ul>${data.sections.languages.map((l: LanguageEntry) => `<li>${l.name} - ${l.proficiency}</li>`).join("")}</ul></section>`;
 
     const interests = `<section><h2>Interests</h2><p>${data.sections.interests}</p></section>`;
 
@@ -186,7 +261,53 @@ const ResumeForm: React.FC = () => {
       // For now, just log the selected layout value
       console.log("Selected layout:", target.value);
       // Example: setLayout(target.value); // if you add a layout state
+      renderResume(resumeData);
     }
+  }
+
+  function PrintLayout():
+    void {
+    const resume = document.getElementById("resume")!;
+
+    // Create an iframe
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    document.body.appendChild(iframe);
+
+    // Get iframe document
+    const iframeDoc = iframe.contentWindow!.document;
+
+    // Copy styles from parent
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map(style => style.outerHTML)
+      .join('\n');
+
+    // Clone the element (preserves rich content)
+    const clone = resume.cloneNode(true);
+
+    // Write content into iframe
+    iframeDoc.open();
+    iframeDoc.write(`
+        <html>
+          <head>
+            <title>Print</title>
+            ${styles}
+          </head>
+          <body></body>
+        </html>
+      `);
+    iframeDoc.body.appendChild(clone);
+    // iframeDoc.close();
+
+    // Wait a moment for images/fonts, then print
+    iframe.contentWindow!.focus();
+    iframe.contentWindow!.print();
+
+    // Cleanup
+    setTimeout(() => document.body.removeChild(iframe), 1000);
   }
   // --- Render ---
   return (
@@ -462,12 +583,13 @@ const ResumeForm: React.FC = () => {
         </button>
       </form>
 
+
       <Section title="Resume Generator Controls">
-        <div className="w-100p">
+        <div className="w-100p container">
           <div className="toolbar">
             <div className="radio-group" onChange={handleLayoutChange}>
               <label>
-                <input type="radio" name="layout" value="layout1" checked/>
+                <input type="radio" name="layout" value="layout1" />
                 Classic Two-Column
               </label>
               <label>
@@ -490,7 +612,7 @@ const ResumeForm: React.FC = () => {
 
           </div>
           <div id="resume" className="resume"></div>
-          <button className="print-btn" onClick={() => window.print()}>Download PDF</button>
+          <button className="print-btn" onClick={() => { PrintLayout(); }}>Download PDF</button>
         </div>
       </Section>
 

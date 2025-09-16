@@ -31,9 +31,16 @@
 
     .resume {
       background: #fff;
-      padding: 25px 35px;
       box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       border-radius: 5px;
+    }
+
+    .resume > div:first-child {
+      padding: 25px 35px;
+    }
+
+    .resume:has(> div:not(:first-child)) {
+      padding: 25px 35px;
     }
 
     .resume:empty::after {
@@ -161,6 +168,7 @@
       border: 1px solid #eee;
       border-radius: 5px;
       flex-wrap: wrap;
+      width: 100%;
     }
 
     .radio-group label {
